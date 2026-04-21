@@ -1,0 +1,113 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    working_dir: /var/www/html/just-blog
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_NAME: CourseOne
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: https://just-blog.local
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel
+      DB_PASSWORD: laravel
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - laravel
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: laravel-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+    networks:
+      - laravel
+
+  mysql:
+    image: mysql:8.4
+    container_name: laravel-mysql
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - laravel
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: laravel-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root
+      UPLOAD_LIMIT: 256M
+    depends_on:
+      - mysql
+    networks:
+      - laravel
+
+  redis:
+    image: redis:7-alpine
+    container_name: laravel-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: laravel-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - laravel
+
+  vite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-vite
+    working_dir: /var/www/html/just-blog
+    command: sh -c "while [ ! -f package.json ]; do echo 'Waiting for Laravel app in /just-blog...'; sleep 2; done && npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "5173:5173"
+    depends_on:
+      - app
+    networks:
+      - laravel
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  laravel:
+    driver: bridge

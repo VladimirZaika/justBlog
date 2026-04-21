@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+node_modules
+vendor
+just-blog/node_modules
+just-blog/vendor
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
